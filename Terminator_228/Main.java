@@ -299,3 +299,207 @@ class ClubDatabase {
         reloadIfChanged();
         return users.size();
     }
+    
+    // ---------- Файл базы ----------
+    // Строка: имя <TAB> возраст <TAB> город <TAB> канал <TAB> контакт <TAB> жанр1,жанр2
+
+    private int indexOfContact(String contact) {
+        for (int i = 0; i < users.size(); i++) {
+            if (users.get(i).getContact().equals(contact)) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    private static String clean(String s) {
+        return s.replace('\t', ' ').replace('\n', ' ').replace('\r', ' ');
+    }
+
+    // Перечитывает файл, если его изменила другая программа.
+    // Возвращает true, если данные обновились.
+    public synchronized boolean reloadIfChanged() {
+        if (!DATA_FILE.exists()) {
+            return false;
+        }
+        String stamp = DATA_FILE.lastModified() + ":" + DATA_FILE.length();
+        if (stamp.equals(lastSeen)) {
+            return false;
+        }
+        ArrayList<User> loaded = new ArrayList<>();
+        try (BufferedReader in = new BufferedReader(new InputStreamReader(
+                new FileInputStream(DATA_FILE), StandardCharsets.UTF_8))) {
+            String line;
+            while ((line = in.readLine()) != null) {
+                String[] p = line.split("\t", -1);
+                if (p.length < 6) {
+                    continue;
+                }
+                User u = new User(p[0], Integer.parseInt(p[1].trim()), p[2], p[3], p[4]);
+                for (String g : p[5].split(",")) {
+                    if (!g.trim().isEmpty()) {
+                        u.addGenre(g.trim());
+                    }
+                }
+                loaded.add(u);
+            }
+        } catch (IOException | NumberFormatException e) {
+            return false;
+        }
+        users.clear();
+        users.addAll(loaded);
+        lastSeen = stamp;
+        return true;
+    }
+
+    private void save() {
+        try (PrintWriter out = new PrintWriter(DATA_FILE, "UTF-8")) {
+            for (User u : users) {
+                out.println(clean(u.getName()) + "\t" + u.getAge() + "\t" + clean(u.getCity())
+                        + "\t" + u.getChannel() + "\t" + clean(u.getContact()) + "\t"
+                        + clean(String.join(",", u.getGenres())));
+            }
+        } catch (IOException e) {
+            System.out.println("Не удалось сохранить базу: " + e.getMessage());
+            return;
+        }
+        lastSeen = DATA_FILE.lastModified() + ":" + DATA_FILE.length();
+    }
+}
+
+// ======================= 2. FACTORY ============================
+
+interface Notifier {
+    void send(User to, String message);
+}
+
+class EmailNotifier implements Notifier {
+    public void send(User to, String message) {
+        System.out.println("  [Email " + to.getContact() + "] " + message);
+    }
+}
+
+class TelegramNotifier implements Notifier {
+    public void send(User to, String message) {
+        System.out.println("  [Telegram " + to.getContact() + "] " + message);
+    }
+}
+
+class SmsNotifier implements Notifier {
+    public void send(User to, String message) {
+        System.out.println("  [SMS " + to.getContact() + "] " + message);
+    }
+}
+
+class NotifierFactory {
+    public static Notifier create(String channel) {
+        if (channel.equals("telegram")) {
+            return new TelegramNotifier();
+        } else if (channel.equals("sms")) {
+            return new SmsNotifier();
+        } else {
+            return new EmailNotifier();
+        }
+    }
+}
+
+// ======================= 3. STRATEGY ===========================
+
+interface MatchStrategy {
+    int score(User a, User b);   // сколько баллов совместимости
+    String getName();
+}
+
+// Совместимость по общим жанрам: 10 баллов за каждый общий жанр
+class GenreMatchStrategy implements MatchStrategy {
+    public int score(User a, User b) {
+        int points = 0;
+        for (String genre : a.getGenres()) {
+            if (b.getGenres().contains(genre)) {
+                points += 10;
+            }
+        }
+        return points;
+    }
+
+    public String getName() { return "по жанрам"; }
+}
+
+// Совместимость по городу и возрасту
+class CityAgeMatchStrategy implements MatchStrategy {
+    public int score(User a, User b) {
+        int points = 0;
+        if (a.getCity().equals(b.getCity())) {
+            points += 20;
+        }
+        int ageDiff = Math.abs(a.getAge() - b.getAge());
+        if (ageDiff <= 2) {
+            points += 10;
+        } else if (ageDiff <= 5) {
+            points += 5;
+        }
+        return points;
+    }
+
+    public String getName() { return "по городу и возрасту"; }
+}
+
+// Класс, который использует стратегию
+class Matchmaker {
+    private MatchStrategy strategy;
+
+    public Matchmaker(MatchStrategy strategy) {
+        this.strategy = strategy;
+    }
+
+    public void setStrategy(MatchStrategy strategy) {
+        this.strategy = strategy;
+    }
+
+    public void printMatches(User user, ArrayList<User> all) {
+        System.out.println("Подбор " + strategy.getName() + ":");
+        for (User other : all) {
+            if (other != user) {
+                int points = strategy.score(user, other);
+                System.out.println("  " + other.getName() + " — " + points + " баллов");
+            }
+        }
+    }
+
+    public User findBest(User user, ArrayList<User> all) {
+        User best = null;
+        int bestScore = 0;
+        for (User other : all) {
+            if (other != user) {
+                int points = strategy.score(user, other);
+                if (points > bestScore) {
+                    bestScore = points;
+                    best = other;
+                }
+            }
+        }
+        return best;
+    }
+}
+
+// ======================= 4. OBSERVER ===========================
+
+class NewsBoard {
+    private ArrayList<User> subscribers = new ArrayList<>();
+
+    public void subscribe(User user) {
+        subscribers.add(user);
+    }
+
+    public void unsubscribe(User user) {
+        subscribers.remove(user);
+        System.out.println(user.getName() + " отписался(ась) от новостей");
+    }
+
+    public void publish(String news) {
+        System.out.println("Новость: " + news);
+        for (User user : subscribers) {
+            user.receiveNews(news);
+        }
+    }
+}
