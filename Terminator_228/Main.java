@@ -247,3 +247,55 @@ class ClubDatabase {
         users.clear();
         save();
     }
+// ---------- Поиск ----------
+
+    public synchronized User findByContact(String contact) {
+        reloadIfChanged();
+        int i = indexOfContact(contact);
+        return i < 0 ? null : users.get(i);
+    }
+
+    public synchronized User findByName(String name) {
+        reloadIfChanged();
+        for (User u : users) {
+            if (u.getName().equalsIgnoreCase(name)) {
+                return u;
+            }
+        }
+        return null;
+    }
+
+    public synchronized ArrayList<User> findByCity(String city) {
+        reloadIfChanged();
+        ArrayList<User> result = new ArrayList<>();
+        for (User u : users) {
+            if (u.getCity().equalsIgnoreCase(city)) {
+                result.add(u);
+            }
+        }
+        return result;
+    }
+
+    public synchronized ArrayList<User> findByGenre(String genre) {
+        reloadIfChanged();
+        ArrayList<User> result = new ArrayList<>();
+        for (User u : users) {
+            if (u.getGenres().contains(genre)) {
+                result.add(u);
+            }
+        }
+        return result;
+    }
+
+    // ---------- Доступ к данным ----------
+
+    // Копия списка: снаружи базу не испортить
+    public synchronized ArrayList<User> getUsers() {
+        reloadIfChanged();
+        return new ArrayList<>(users);
+    }
+
+    public synchronized int count() {
+        reloadIfChanged();
+        return users.size();
+    }
