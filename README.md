@@ -3,8 +3,8 @@
 ## Команда
 1. Erasul Mulaev
 2. Baizhuma Rustem
-3. Баха
-4. Марлен
+3. Auelbek Bakytzhan
+4. Nurlanov Marlen
 
 ## Жоба сипаттамасы 
 
