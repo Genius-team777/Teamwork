@@ -161,7 +161,7 @@ classDiagram
     
     class FirebaseRealtimeDatabase {
       <<external>>
-      +users/{contactKey}: UserRecord
+      +usersByContactKey: UserRecord
     }
 
     class AdminGUI {
