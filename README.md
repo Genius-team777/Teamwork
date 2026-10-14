@@ -31,6 +31,59 @@
 - CSV форматына экспорт/импорт жасау
 мүмкіндігі бар.
 
+## Описание вклада команды (4 роли)
+
+### 1) Тимлид (Erasul Mulaev) — архитектура и интеграция модулей
+Тимлид собрал общий сценарий работы приложения в `Main`: регистрация, подбор, уведомления и рассылка новостей.  
+Он зафиксировал применение паттернов в одном потоке выполнения.
+
+```java
+ClubDatabase db = ClubDatabase.getInstance();
+Matchmaker matchmaker = new Matchmaker(new GenreMatchStrategy());
+Notifier n1 = NotifierFactory.create(rustem.getChannel());
+NewsBoard board = new NewsBoard();
+```
+
+### 2) Developer (Baizhuma Rustem) — пользовательский функционал и GUI
+Разработчик реализовал окно администратора `AdminGUI`: таблицу участников, поиск, CRUD-операции и CSV импорт/экспорт.  
+Также добавил автообновление интерфейса при изменении данных.
+
+```java
+add.addActionListener(e -> addUser());
+edit.addActionListener(e -> editUser());
+delete.addActionListener(e -> deleteUser());
+new javax.swing.Timer(1000, e -> {
+    if (db.reloadIfChanged()) refresh();
+}).start();
+```
+
+### 3) Database Engineer (Auelbek Bakytzhan) — единая база и синхронизация
+Инженер по БД реализовал `ClubDatabase` как Singleton с синхронизацией данных в Firebase Realtime Database.  
+Добавлены операции регистрации, замены, удаления и периодический `pull()` из облака.
+
+```java
+private static class Holder {
+    private static final ClubDatabase INSTANCE = new ClubDatabase();
+}
+
+public static ClubDatabase getInstance() {
+    return Holder.INSTANCE;
+}
+```
+
+### 4) Security Engineer (Nurlanov Marlen) — валидация и защита доступа
+Специалист по безопасности добавил проверку входных данных, работу с токенами Firebase Authentication и безопасную обработку ошибок.  
+Критичные параметры читаются из переменных окружения, чтобы не передавать секреты в коде.
+
+```java
+if (u.getAge() < MIN_AGE || u.getAge() > MAX_AGE) {
+    return "клуб для молодёжи от " + MIN_AGE + " до " + MAX_AGE + " лет";
+}
+if (FIREBASE_API_KEY.isEmpty() || FIREBASE_EMAIL.isEmpty() || FIREBASE_PASSWORD.isEmpty()) {
+    throw new IOException("Не настроена Firebase Authentication...");
+}
+```
+
 ## UML (Class Diagram)
 
 ```mermaid
@@ -52,9 +105,13 @@ classDiagram
       <<Singleton>>
       -users: ArrayList~User~
       +getInstance() ClubDatabase
+      +getDatabaseUrl() String
+      +validationError(user) String
+      +getChannels() List~String~
       +register(user) boolean
       +replaceUser(old, updated) boolean
       +remove(contact) boolean
+      +clearUsers()
       +findByContact(contact) User
       +findByName(name) User
       +findByCity(city) ArrayList~User~
@@ -98,7 +155,25 @@ classDiagram
       +publish(news)
     }
 
-    class AdminGUI
+    class MiniJson {
+      +parse(text) Object
+    }
+
+    class AdminGUI {
+      +AdminGUI()
+      +main(args)
+      -refresh()
+      -applyFilter()
+      -addUser()
+      -editUser()
+      -deleteUser()
+      -exportCsv()
+      -importCsv()
+    }
+
+    class RoundButton {
+      <<inner>>
+    }
 
     Notifier <|.. EmailNotifier
     Notifier <|.. TelegramNotifier
@@ -112,8 +187,10 @@ classDiagram
     User --> NotifierFactory
     NewsBoard --> User
     ClubDatabase --> User
+    ClubDatabase ..> MiniJson
     AdminGUI --> ClubDatabase
     AdminGUI --> User
+    AdminGUI ..> RoundButton
     Main --> ClubDatabase
     Main --> Matchmaker
     Main --> NotifierFactory
