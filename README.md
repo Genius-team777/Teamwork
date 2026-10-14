@@ -158,6 +158,11 @@ classDiagram
     class MiniJson {
       +parse(text) Object
     }
+    
+    class FirebaseRealtimeDatabase {
+      <<external>>
+      +users/{contactKey}: UserRecord
+    }
 
     class AdminGUI {
       +AdminGUI()
@@ -188,6 +193,7 @@ classDiagram
     NewsBoard --> User
     ClubDatabase --> User
     ClubDatabase ..> MiniJson
+    ClubDatabase --> FirebaseRealtimeDatabase
     AdminGUI --> ClubDatabase
     AdminGUI --> User
     AdminGUI ..> RoundButton
