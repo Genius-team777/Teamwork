@@ -125,6 +125,7 @@ classDiagram
       <<interface>>
       +send(to, message)
     }
+
     class EmailNotifier
     class TelegramNotifier
     class SmsNotifier
@@ -138,6 +139,7 @@ classDiagram
       +score(a, b) int
       +getName() String
     }
+
     class GenreMatchStrategy
     class CityAgeMatchStrategy
 
@@ -158,7 +160,7 @@ classDiagram
     class MiniJson {
       +parse(text) Object
     }
-    
+
     class FirebaseRealtimeDatabase {
       <<external>>
       +users/{contactKey}: UserRecord
