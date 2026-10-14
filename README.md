@@ -57,7 +57,7 @@ new javax.swing.Timer(1000, e -> {
 }).start();
 ```
 
-### 3) Database Engineer (Auelbek Bakytzhan) — единая база и синхронизация
+### 3) Database Engineer (Marlen) — единая база и синхронизация
 Инженер по БД реализовал `ClubDatabase` как Singleton с синхронизацией данных в Firebase Realtime Database.  
 Добавлены операции регистрации, замены, удаления и периодический `pull()` из облака.
 
@@ -71,7 +71,7 @@ public static ClubDatabase getInstance() {
 }
 ```
 
-### 4) Security Engineer (Nurlanov Marlen) — валидация и защита доступа
+### 4) Security Engineer (Bakytzhan) — валидация и защита доступа
 Специалист по безопасности добавил проверку входных данных, работу с токенами Firebase Authentication и безопасную обработку ошибок.  
 Критичные параметры читаются из переменных окружения, чтобы не передавать секреты в коде.
 
