@@ -91,32 +91,32 @@ classDiagram
     class Main
 
     class User {
-      -name: String
-      -age: int
-      -city: String
-      -channel: String
-      -contact: String
-      -genres: ArrayList~String~
+      -String name
+      -int age
+      -String city
+      -String channel
+      -String contact
+      -ArrayList genres
       +addGenre(genre)
       +receiveNews(news)
     }
 
     class ClubDatabase {
       <<Singleton>>
-      -users: ArrayList~User~
+      -ArrayList users
       +getInstance() ClubDatabase
       +getDatabaseUrl() String
       +validationError(user) String
-      +getChannels() List~String~
+      +getChannels() List
       +register(user) boolean
       +replaceUser(old, updated) boolean
       +remove(contact) boolean
       +clearUsers()
       +findByContact(contact) User
       +findByName(name) User
-      +findByCity(city) ArrayList~User~
-      +findByGenre(genre) ArrayList~User~
-      +getUsers() ArrayList~User~
+      +findByCity(city) ArrayList
+      +findByGenre(genre) ArrayList
+      +getUsers() ArrayList
       +count() int
       +reloadIfChanged() boolean
     }
@@ -144,14 +144,14 @@ classDiagram
     class CityAgeMatchStrategy
 
     class Matchmaker {
-      -strategy: MatchStrategy
+      -MatchStrategy strategy
       +setStrategy(strategy)
       +printMatches(user, all)
       +findBest(user, all) User
     }
 
     class NewsBoard {
-      -subscribers: ArrayList~User~
+      -ArrayList subscribers
       +subscribe(user)
       +unsubscribe(user)
       +publish(news)
@@ -163,7 +163,9 @@ classDiagram
 
     class FirebaseRealtimeDatabase {
       <<external>>
-      +users/{contactKey}: UserRecord
+      +getUsers() UserRecord
+      +saveUser() void
+      +deleteUser() void
     }
 
     class AdminGUI {
